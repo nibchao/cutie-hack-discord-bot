@@ -1,4 +1,4 @@
-const { Client, Intents } = require('discord.js');
+const { Client, Intents, Permissions } = require('discord.js');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES,] });
 const token = process.env['token']
 
@@ -11,37 +11,50 @@ client.on("messageCreate", async (message) => {
 
   if (message.author.bot) return;
 
-  if (message.content.startsWith("!kick")) {
-      const target = message.mentions.users.first();
-      if (target === undefined)
-      {
-        message.channel.send("User not found in the server.");
-        return;
-      }
-      const memberID = message.guild.members.cache.get(target.id);
-      if (target) {
+  if (message.content.startsWith("!kick"))
+  { 
+    if (message.member.permissions.has([Permissions.FLAGS.KICK_MEMBERS]))
+    {
+        const target = message.mentions.users.first();
+        const reason = message.content.split(' ').splice(2);
+        if (target === undefined)
+        {
+          message.channel.send("User not found in the server. Command format is !kick @<user> [optional reason].");
+          return;
+        }
+        const memberID = message.guild.members.cache.get(target.id);
+        if (target && reason == '') {
         memberID.kick();
         message.channel.send(`${memberID} was kicked.`);
-      }
+        }
+        else
+        {
+          memberID.kick();
+          message.channel.send(`${memberID} was kicked for ${reason}.`);
+        }
+    }
+    else
+    {
+      message.channel.send(`<@${message.member.id}>, you do not have permission to use this command.`);
+    }
+    
   }
 })
 
-
-
 // https://en.wiktionary.org/wiki/Category:English_swear_words
-const profanity = ["bastard","bullshit","crap","cunt","slut","fuck","shit","bitch","damn","ass","asshole","dumbass", "motherfucker"];
-
+const profanity = ["bastard","bullshit","cunt","slut","fuck","shit","bitch", "motherfucker"];
 
   client.on("messageCreate", async (message) => {
-    // 1. console log the message to find out what it is
     console.log(message);
+
+    const user = message.author;
 
     if (message.author.bot) return;
 
-    // 3. create your own command
     for (var cnt = 0; cnt < profanity.length; cnt++) {
         if (message.content.toLowerCase().includes(profanity[cnt])) {
         await message.member.kick();
+        message.channel.send(`${message.guild.members.cache.get(user.id)} was kicked for minor profanity.`);
         break;
         }
     }
